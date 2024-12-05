@@ -1,8 +1,10 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using TMPro;
 using Unity.Mathematics;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class ShipScript : MonoBehaviour
 {
@@ -17,6 +19,7 @@ public class ShipScript : MonoBehaviour
     public Vector3 rbVelDebug;
     public bool collideEarthDebug;
     public bool collideMoonDebug;
+    public bool collideMoonDebug2;
     Vector3 angularVel;
     public float thrust;
     public Transform upPoint;
@@ -32,6 +35,9 @@ public class ShipScript : MonoBehaviour
     public GameObject plantFlagText;
     public bool flagPlanted;
     public float plantFlagTextShowCooldown;
+    public TMP_Text celestialBodyNear;
+    public TMP_Text velDisplay;
+    public Slider thrustDisplay;
 
     // Start is called before the first frame update
     void Start()
@@ -55,6 +61,7 @@ public class ShipScript : MonoBehaviour
         if(Input.GetKeyDown(KeyCode.M)){
             inMap = !inMap;
         }
+        thrustDisplay.value = thrust;
     }
 
     void FixedUpdate()
@@ -96,6 +103,12 @@ public class ShipScript : MonoBehaviour
             velocity = new Vector3(velocity.x - (gravAccelMagniMoon * ((transform.position.x - moonPos.x) / Vector3.Distance(transform.position, moonPos))),
                                     velocity.y - (gravAccelMagniMoon * ((transform.position.y - moonPos.y) / Vector3.Distance(transform.position, moonPos))),
                                     velocity.z - (gravAccelMagniMoon * ((transform.position.z - moonPos.z) / Vector3.Distance(transform.position, moonPos))));
+            celestialBodyNear.text = "Near Moon";
+            velDisplay.text = "Velocity Relative to Moon: " + (((int) ((moon.GetComponent<moonscript>().velEvaluated - velocity).magnitude * 10)) / 10.0f);
+        }
+        else{
+            celestialBodyNear.text = "Near Earth";
+            velDisplay.text = "Velocity Relative to Earth: " + (((int) (velocity.magnitude * 10)) / 10.0f);
         }
         if(collidesWithEarth() != null){
             foreach (int i in collidesWithEarth()){
@@ -111,15 +124,21 @@ public class ShipScript : MonoBehaviour
         else{
             collideEarthDebug = false;
         }
+        Debug.DrawRay(transform.position, velocity);
         if(collidesWithMoon() != null){
             foreach (int i in collidesWithMoon()){
                 transform.position += new Vector3((((colliderVertices[i].position.x - moonPos.x) / Vector3.Distance(colliderVertices[i].position, moonPos)) * 200) - (colliderVertices[i].position.x - moonPos.x), (((colliderVertices[i].position.y - moonPos.y) / Vector3.Distance(colliderVertices[i].position, moonPos)) * 200) - (colliderVertices[i].position.y - moonPos.y), (((colliderVertices[i].position.z - moonPos.z) / Vector3.Distance(colliderVertices[i].position, moonPos)) * 200) - (colliderVertices[i].position.z - moonPos.z));
                 // Debug.Log("Done.");
             }
-            if(vectorToRadialComponent(velocity, (transform.position - moonPos)) < 0){
+            if(vectorToRadialComponent(velocity - moon.GetComponent<moonscript>().velEvaluated, transform.position - moonPos) < 0){
                 velocity = moon.GetComponent<moonscript>().velEvaluated;
+                Debug.Log("now" + Time.time);
+                collideMoonDebug2 = true;
                 // transform.position += moon.GetComponent<moonscript>().velEvaluated / 50;
                 // Debug.Log(vectorToRadialComponent(velocity, transform.position));
+            }
+            else{
+                collideMoonDebug2 = false;
             }
             collideMoonDebug = true;
             if(!flagPlanted){
