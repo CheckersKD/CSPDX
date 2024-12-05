@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using TMPro;
 using Unity.Mathematics;
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -38,6 +39,10 @@ public class ShipScript : MonoBehaviour
     public TMP_Text celestialBodyNear;
     public TMP_Text velDisplay;
     public Slider thrustDisplay;
+    public bool[] holdingDiffDirs;
+    public minishipscript miniship;
+    public GameObject[] holdButtons = new GameObject[6];
+    public GameObject[] holdingButtons = new GameObject[6];
 
     // Start is called before the first frame update
     void Start()
@@ -47,6 +52,8 @@ public class ShipScript : MonoBehaviour
         thrust = 0;
         inMap = false;
         flagPlanted = false;
+        //prograde, retrograde, normal, anti-normal, radial in, radial out
+        holdingDiffDirs = new bool[6];
     }
 
     void Update(){
@@ -87,6 +94,7 @@ public class ShipScript : MonoBehaviour
         if(Input.GetKey(KeyCode.S)){
             angularVel.z -= 1f;
         }
+        
         var main = thrustParticles.main;
         main.startSpeed = Mathf.Clamp(Mathf.Pow(thrust, 2) * 10 * (1 + UnityEngine.Random.value), 2, 20);
         var emission = thrustParticles.emission;
@@ -162,7 +170,65 @@ public class ShipScript : MonoBehaviour
         // Debug.Log(vectorToRadialComponent(velocity, transform.position));
         velMag = velocity.magnitude;
         transform.position += (velocity * Time.deltaTime);
-        transform.Rotate(angularVel * Time.deltaTime);
+        if(!collideEarthDebug && !collideMoonDebug){
+            if(holdingDiffDirs[0]){
+                showHoldingButton(0);
+                if(Vector3.Distance(transform.position, moonPos) < 700)
+                    transform.up = (velocity - moon.GetComponent<moonscript>().velEvaluated).normalized;
+                else
+                    transform.up = velocity.normalized;
+            }
+            else if(holdingDiffDirs[1]){
+                showHoldingButton(1);
+                if(Vector3.Distance(transform.position, moonPos) < 700)
+                    transform.up = -(velocity - moon.GetComponent<moonscript>().velEvaluated).normalized;
+                else
+                    transform.up = -velocity.normalized;
+            }
+            else if(holdingDiffDirs[2]){
+                showHoldingButton(2);
+                Vector3 normalV = new Vector3(((miniship.pointSave3.y - miniship.pointSave1.y) * (miniship.pointSave2.z - miniship.pointSave1.z) - (miniship.pointSave3.z - miniship.pointSave1.z) * (miniship.pointSave2.y - miniship.pointSave1.y)), ((miniship.pointSave3.z - miniship.pointSave1.z) * (miniship.pointSave2.x - miniship.pointSave1.x) - (miniship.pointSave3.x - miniship.pointSave1.x) * (miniship.pointSave2.z - miniship.pointSave1.z)), ((miniship.pointSave3.x - miniship.pointSave1.x) * (miniship.pointSave2.y - miniship.pointSave1.y) - (miniship.pointSave3.y - miniship.pointSave1.y) * (miniship.pointSave2.x - miniship.pointSave1.x)));
+                transform.up = normalV.normalized;
+            }
+            else if(holdingDiffDirs[3]){
+                showHoldingButton(3);
+                Vector3 normalV = new Vector3(((miniship.pointSave3.y - miniship.pointSave1.y) * (miniship.pointSave2.z - miniship.pointSave1.z) - (miniship.pointSave3.z - miniship.pointSave1.z) * (miniship.pointSave2.y - miniship.pointSave1.y)), ((miniship.pointSave3.z - miniship.pointSave1.z) * (miniship.pointSave2.x - miniship.pointSave1.x) - (miniship.pointSave3.x - miniship.pointSave1.x) * (miniship.pointSave2.z - miniship.pointSave1.z)), ((miniship.pointSave3.x - miniship.pointSave1.x) * (miniship.pointSave2.y - miniship.pointSave1.y) - (miniship.pointSave3.y - miniship.pointSave1.y) * (miniship.pointSave2.x - miniship.pointSave1.x)));
+                transform.up = -normalV.normalized;
+            }
+            else if(holdingDiffDirs[4]){
+                showHoldingButton(4);
+                Vector3 normalV = new Vector3(((miniship.pointSave3.y - miniship.pointSave1.y) * (miniship.pointSave2.z - miniship.pointSave1.z) - (miniship.pointSave3.z - miniship.pointSave1.z) * (miniship.pointSave2.y - miniship.pointSave1.y)), ((miniship.pointSave3.z - miniship.pointSave1.z) * (miniship.pointSave2.x - miniship.pointSave1.x) - (miniship.pointSave3.x - miniship.pointSave1.x) * (miniship.pointSave2.z - miniship.pointSave1.z)), ((miniship.pointSave3.x - miniship.pointSave1.x) * (miniship.pointSave2.y - miniship.pointSave1.y) - (miniship.pointSave3.y - miniship.pointSave1.y) * (miniship.pointSave2.x - miniship.pointSave1.x)));
+                Vector3 point1 = transform.position;
+                Vector3 point2 = transform.position + normalV;
+                Vector3 point3;
+                if(Vector3.Distance(transform.position, moonPos) < 700)
+                    point3 = transform.position + (velocity - moon.GetComponent<moonscript>().velEvaluated);
+                else
+                    point3 = transform.position + velocity;
+                Vector3 radial = new Vector3(((point3.y - point1.y) * (point2.z - point1.z) - (point3.z - point1.z) * (point2.y - point1.y)), ((point3.z - point1.z) * (point2.x - point1.x) - (point3.x - point1.x) * (point2.z - point1.z)), ((point3.x - point1.x) * (point2.y - point1.y) - (point3.y - point1.y) * (point2.x - point1.x)));
+                transform.up = radial.normalized;
+            }
+            else if(holdingDiffDirs[5]){
+                showHoldingButton(5);
+                Vector3 normalV = new Vector3(((miniship.pointSave3.y - miniship.pointSave1.y) * (miniship.pointSave2.z - miniship.pointSave1.z) - (miniship.pointSave3.z - miniship.pointSave1.z) * (miniship.pointSave2.y - miniship.pointSave1.y)), ((miniship.pointSave3.z - miniship.pointSave1.z) * (miniship.pointSave2.x - miniship.pointSave1.x) - (miniship.pointSave3.x - miniship.pointSave1.x) * (miniship.pointSave2.z - miniship.pointSave1.z)), ((miniship.pointSave3.x - miniship.pointSave1.x) * (miniship.pointSave2.y - miniship.pointSave1.y) - (miniship.pointSave3.y - miniship.pointSave1.y) * (miniship.pointSave2.x - miniship.pointSave1.x)));
+                Vector3 point1 = transform.position;
+                Vector3 point2 = transform.position + normalV;
+                Vector3 point3;
+                if(Vector3.Distance(transform.position, moonPos) < 700)
+                    point3 = transform.position + (velocity - moon.GetComponent<moonscript>().velEvaluated);
+                else
+                    point3 = transform.position + velocity;
+                Vector3 radial = new Vector3(((point3.y - point1.y) * (point2.z - point1.z) - (point3.z - point1.z) * (point2.y - point1.y)), ((point3.z - point1.z) * (point2.x - point1.x) - (point3.x - point1.x) * (point2.z - point1.z)), ((point3.x - point1.x) * (point2.y - point1.y) - (point3.y - point1.y) * (point2.x - point1.x)));
+                transform.up = -radial.normalized;
+            }
+            else{
+                showHoldingButton(-1);
+                transform.Rotate(angularVel * Time.deltaTime);
+            }
+        }
+        else{
+            transform.Rotate(angularVel * Time.deltaTime);
+        }
         // Debug.Log(Time.deltaTime);
     }
 
@@ -207,5 +273,39 @@ public class ShipScript : MonoBehaviour
         Vector3 radialNormalized = new Vector3(radialVector.x / radialVector.magnitude, radialVector.y / radialVector.magnitude, radialVector.z / radialVector.magnitude);
         float radialComponentNormalized = (inputNormalized.x * radialNormalized.x) + (inputNormalized.y * radialNormalized.y) + (inputNormalized.z * radialNormalized.z);
         return radialComponentNormalized * inputNormalized.magnitude;
+    }
+
+    public void setAutopilotDirection(int dir){
+        for(int i = 0; i < 6; i++){
+            if(i == dir)
+                holdingDiffDirs[i] = true;
+            else
+                holdingDiffDirs[i] = false;
+        }
+    }
+    public void unsetAutopilotDirection(){
+        for(int i = 0; i < 6; i++){
+            holdingDiffDirs[i] = false;
+        }
+    }
+    public void showHoldingButton(int dir){
+        if(dir == -1){
+            for(int i = 0; i < 6; i++){
+                holdingButtons[i].SetActive(false);
+                holdButtons[i].SetActive(true);
+            }
+        }
+        else{
+            for(int i = 0; i < 6; i++){
+                if(i == dir){
+                    holdingButtons[i].SetActive(true);
+                    holdButtons[i].SetActive(false);
+                }
+                else{
+                    holdingButtons[i].SetActive(false);
+                    holdButtons[i].SetActive(true);
+                }
+            }
+        }
     }
 }

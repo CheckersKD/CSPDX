@@ -11,6 +11,9 @@ public class minishipscript : MonoBehaviour
     public int numLookaheads;
     public int numSteps;
     GameObject[] greenDots;
+    public Vector3 pointSave1;
+    public Vector3 pointSave2;
+    public Vector3 pointSave3;
     // Start is called before the first frame update
     void Start()
     {
@@ -53,5 +56,8 @@ public class minishipscript : MonoBehaviour
                 i = numLookaheads;
             }
         }
+        pointSave1 = greenDots[0].transform.position;
+        pointSave2 = greenDots[1].transform.position;
+        pointSave3 = greenDots[2].transform.position;
     }
 }
