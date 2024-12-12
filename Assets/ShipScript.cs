@@ -5,6 +5,7 @@ using TMPro;
 using Unity.Mathematics;
 using Unity.VisualScripting;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 public class ShipScript : MonoBehaviour
@@ -30,8 +31,10 @@ public class ShipScript : MonoBehaviour
     public GameObject moon;
     public float velMag;
     public bool inMap;
+    public bool spacewalking;
     public GameObject mainCamera;
     public GameObject mapCamera;
+    public GameObject spacemancam;
     public GameObject flagPrefab;
     public GameObject plantFlagText;
     public bool flagPlanted;
@@ -43,6 +46,11 @@ public class ShipScript : MonoBehaviour
     public minishipscript miniship;
     public GameObject[] holdButtons = new GameObject[6];
     public GameObject[] holdingButtons = new GameObject[6];
+    public GameObject spaceman;
+    public float fuel;
+    public Slider fuelSlider;
+    public Toggle fuelToggle;
+    public GameObject boardshiptext;
 
     // Start is called before the first frame update
     void Start()
@@ -54,44 +62,66 @@ public class ShipScript : MonoBehaviour
         flagPlanted = false;
         //prograde, retrograde, normal, anti-normal, radial in, radial out
         holdingDiffDirs = new bool[6];
+        fuel = 5000.0f;
     }
 
     void Update(){
-        mainCamera.SetActive(!inMap);
+        if(!inMap){
+            mainCamera.SetActive(!spacewalking);
+            spacemancam.SetActive(spacewalking);
+        }
+        else{
+            mainCamera.SetActive(false);
+            spacemancam.SetActive(false);
+        }
         mapCamera.SetActive(inMap);
-        if(Input.GetKeyDown(KeyCode.Z)){
+        spaceman.SetActive(spacewalking);
+        if(Input.GetKeyDown(KeyCode.Z) && !spacewalking){
             thrust = 1;
         }
-        if(Input.GetKeyDown(KeyCode.X)){
+        if(Input.GetKeyDown(KeyCode.X) && !spacewalking){
             thrust = 0;
         }
         if(Input.GetKeyDown(KeyCode.M)){
             inMap = !inMap;
         }
+        if(Input.GetKeyDown(KeyCode.Escape)){
+            SceneManager.LoadScene(0);
+        }
+        if(Input.GetKeyDown(KeyCode.F)){
+            if((spacewalking && Vector3.Distance(spaceman.transform.position, transform.position) < 3.5f) || !spacewalking){
+                spacewalking = !spacewalking;
+                if(spacewalking == true){
+                    spaceman.transform.position = transform.position;
+                    spaceman.GetComponent<spacemanscript>().velocity = velocity;
+                }
+            }
+        }
         thrustDisplay.value = thrust;
+        boardshiptext.SetActive(spacewalking && Vector3.Distance(spaceman.transform.position, transform.position) < 3.5f);
     }
 
     void FixedUpdate()
     {
         moonPos = moon.transform.position;
-        if(Input.GetKey(KeyCode.LeftShift)){
+        if(Input.GetKey(KeyCode.LeftShift) && !spacewalking){
             thrust += 0.02f;
             thrust = Mathf.Clamp(thrust, 0, 1);
         }
-        if(Input.GetKey(KeyCode.LeftControl)){
+        if(Input.GetKey(KeyCode.LeftControl) && !spacewalking){
             thrust -= 0.02f;
             thrust = Mathf.Clamp(thrust, 0, 1);
         }
-        if(Input.GetKey(KeyCode.D)){
+        if(Input.GetKey(KeyCode.D) && !spacewalking){
             angularVel.x += 1f;
         }
-        if(Input.GetKey(KeyCode.A)){
+        if(Input.GetKey(KeyCode.A) && !spacewalking){
             angularVel.x -= 1f;
         }
-        if(Input.GetKey(KeyCode.W)){
+        if(Input.GetKey(KeyCode.W) && !spacewalking){
             angularVel.z += 1f;
         }
-        if(Input.GetKey(KeyCode.S)){
+        if(Input.GetKey(KeyCode.S) && !spacewalking){
             angularVel.z -= 1f;
         }
         
@@ -119,6 +149,7 @@ public class ShipScript : MonoBehaviour
             velDisplay.text = "Velocity Relative to Earth: " + (((int) (velocity.magnitude * 10)) / 10.0f);
         }
         if(collidesWithEarth() != null){
+            unsetAutopilotDirection();
             foreach (int i in collidesWithEarth()){
                 transform.position += new Vector3(((colliderVertices[i].position.x / Vector3.Magnitude(colliderVertices[i].position)) * 900) - colliderVertices[i].position.x, ((colliderVertices[i].position.y / Vector3.Magnitude(colliderVertices[i].position)) * 900) - colliderVertices[i].position.y, ((colliderVertices[i].position.z / Vector3.Magnitude(colliderVertices[i].position)) * 900) - colliderVertices[i].position.z);
                 // Debug.Log("Done.");
@@ -134,6 +165,7 @@ public class ShipScript : MonoBehaviour
         }
         Debug.DrawRay(transform.position, velocity);
         if(collidesWithMoon() != null){
+            unsetAutopilotDirection();
             foreach (int i in collidesWithMoon()){
                 transform.position += new Vector3((((colliderVertices[i].position.x - moonPos.x) / Vector3.Distance(colliderVertices[i].position, moonPos)) * 200) - (colliderVertices[i].position.x - moonPos.x), (((colliderVertices[i].position.y - moonPos.y) / Vector3.Distance(colliderVertices[i].position, moonPos)) * 200) - (colliderVertices[i].position.y - moonPos.y), (((colliderVertices[i].position.z - moonPos.z) / Vector3.Distance(colliderVertices[i].position, moonPos)) * 200) - (colliderVertices[i].position.z - moonPos.z));
                 // Debug.Log("Done.");
@@ -149,7 +181,7 @@ public class ShipScript : MonoBehaviour
                 collideMoonDebug2 = false;
             }
             collideMoonDebug = true;
-            if(!flagPlanted){
+            if(!flagPlanted && !spacewalking){
                 plantFlagTextShowCooldown = 1.0f;
                 if(Input.GetKey(KeyCode.P)){
                     GameObject plantedFlag = (GameObject) Instantiate(flagPrefab);
@@ -170,6 +202,10 @@ public class ShipScript : MonoBehaviour
         // Debug.Log(vectorToRadialComponent(velocity, transform.position));
         velMag = velocity.magnitude;
         transform.position += (velocity * Time.deltaTime);
+        if(!fuelToggle.isOn){
+            fuel -= thrust;
+            fuelSlider.value = fuel;
+        }
         if(!collideEarthDebug && !collideMoonDebug){
             if(holdingDiffDirs[0]){
                 showHoldingButton(0);

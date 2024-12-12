@@ -13,7 +13,7 @@ public class MainCameraScript : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        thetaX = 0;
+        thetaX = 0.01f;
         thetaY = Mathf.Atan(2/3f);
     }
 

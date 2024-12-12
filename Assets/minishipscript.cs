@@ -56,8 +56,11 @@ public class minishipscript : MonoBehaviour
                 i = numLookaheads;
             }
         }
-        pointSave1 = greenDots[0].transform.position;
-        pointSave2 = greenDots[1].transform.position;
-        pointSave3 = greenDots[2].transform.position;
+        if(greenDots[0] != null)
+            pointSave1 = greenDots[0].transform.position;
+        if(greenDots[1] != null)
+            pointSave2 = greenDots[1].transform.position;
+        if(greenDots[2] != null)
+            pointSave3 = greenDots[2].transform.position;
     }
 }
